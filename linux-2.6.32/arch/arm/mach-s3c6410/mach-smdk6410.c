@@ -142,6 +142,36 @@ struct s3c_nand_mtd_info s3c_nand_mtd_part_info = {
  * PWM_TOUT1 => backlight brightness
  */
 
+/* LCD Controller */
+
+static struct resource s3c_lcd_resource[] = {
+	[0] = {
+		.start = S3C64XX_PA_LCD,
+		//.end   = S3C64XX_PA_LCD + SZ_1M - 1,
+		.end   = S3C64XX_PA_LCD + 0x1000 - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.start = IRQ_LCD_VSYNC ,
+		.end   = IRQ_LCD_SYSTEM,
+		.flags = IORESOURCE_IRQ,
+	}
+};
+
+static u64 s3c_device_lcd_dmamask = 0xffffffffUL;
+
+struct platform_device s3c_device_lcd = {
+	.name		  = "s3c-lcd",
+	.id		  = -1,
+	.num_resources	  = ARRAY_SIZE(s3c_lcd_resource),
+	.resource	  = s3c_lcd_resource,
+	.dev              = {
+		.dma_mask		= &s3c_device_lcd_dmamask,
+		.coherent_dma_mask	= 0xffffffffUL
+	}
+};
+
+
 static void smdk6410_lcd_power_set(struct plat_lcd_data *pd,
 				   unsigned int power)
 {
@@ -226,7 +256,22 @@ static struct platform_device smdk6410_smsc911x = {
 	},
 };
 
-static struct map_desc smdk6410_iodesc[] = {};
+//static struct map_desc smdk6410_iodesc[] = {};
+static struct map_desc smdk6410_iodesc[] = {
+
+{
+.virtual= (unsigned long)S3C_VA_LCD,
+.pfn= __phys_to_pfn(S3C64XX_PA_FB),
+.length= SZ_64K,
+.type= MT_DEVICE,
+},
+{
+.virtual= (unsigned long)S3C64XX_VA_HOSTIFB,
+.pfn= __phys_to_pfn(S3C64XX_PA_HOSTIFB),
+.length= SZ_64K,
+.type= MT_DEVICE,
+},
+};
 
 static struct platform_device *smdk6410_devices[] __initdata = {
 #ifdef CONFIG_SMDK6410_SD_CH0
@@ -242,6 +287,7 @@ static struct platform_device *smdk6410_devices[] __initdata = {
 	&s3c_device_nand,
 	&s3c_device_usb_hsotg,
 	&smdk6410_lcd_powerdev,
+	&s3c_device_lcd,
 
 	&smdk6410_smsc911x,
 };
